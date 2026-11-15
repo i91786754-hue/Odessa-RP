@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Цифрова податкова</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* ===== КОЛЬОРИ (синьо-білі) — міняй тут ===== */
+  :root {
+    --blue: #1f5fd6;
+    --blue-dark: #153f93;
+    --blue-light: #e8f0fd;
+    --white: #ffffff;
+    --text: #12254a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--blue-light);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  /* Шапка */
+  header {
+    background: var(--blue);
+    color: var(--white);
+    padding: 32px 20px 28px;
+  }
+  .brand { margin: 0 0 10px; font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+  header h1 { margin: 0 0 4px; font-size: 24px; }
+  header p { margin: 0; opacity: .85; }
+
+  main { padding: 16px; max-width: 520px; margin: 0 auto; }
+
+  .card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+    border: 1px solid #d3e1fa;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 18px; color: var(--blue-dark); }
+
+  label { display: block; margin: 12px 0 4px; font-size: 14px; font-weight: 600; }
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid #b9cdf3;
+    border-radius: 10px;
+    font-size: 16px;
+    color: var(--text);
+    background: var(--white);
+  }
+  input:focus { outline: none; border-color: var(--blue); }
+
+  button {
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--blue);
+    color: var(--white);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  button:active { background: var(--blue-dark); }
+
+  /* Готовий документ */
+  .doc { display: none; border: 2px solid var(--blue); }
+  .doc.show { display: block; }
+  .doc dl { margin: 0; }
+  .doc dt { font-size: 13px; opacity: .65; margin-top: 10px; }
+  .doc dd { margin: 0; font-size: 17px; font-weight: 600; }
+
+  /* Заборгованість */
+  .debt {
+    background: var(--blue-dark);
+    color: var(--white);
+    text-align: center;
+    border: 0;
+  }
+  .debt .label { opacity: .8; font-size: 14px; }
+  .debt .sum { font-size: 34px; font-weight: 700; }
+
+  /* Вікно привітання */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(18, 37, 74, .55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    z-index: 10;
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 26px 22px;
+    max-width: 360px;
+    text-align: center;
+  }
+  .modal p { font-size: 18px; margin: 0; }
+
+  /* Сніжинки */
+  #snow {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 5;
+  }
+  .flake {
+    position: absolute;
+    top: -30px;
+    color: #ffffff;
+    text-shadow: 0 0 4px rgba(31, 95, 214, .75);
+    animation-name: fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  @keyframes fall {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(var(--drift, 30px), 110vh, 0) rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { #snow { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="snow"></div>
+
+<!-- ===== ВІКНО ПРИВІТАННЯ ===== -->
+<div class="overlay" id="welcome">
+  <div class="modal">
+    <p id="welcomeText"></p>
+    <button onclick="closeWelcome()">Продовжити</button>
+  </div>
+</div>
+
+<header>
+  <div class="brand">⚓ Odessa RP</div>
+  <h1>Цифрова податкова</h1>
+  <p>Гортайте вниз, щоб оформити документ</p>
+</header>
+
+<main>
+  <!-- ===== ДОКУМЕНТ НА ЖИТЛО ===== -->
+  <section class="card">
+    <h2>Документ на житло</h2>
+
+    <label for="firstName">Ім'я (ігрове)</label>
+    <input id="firstName" type="text" autocomplete="off">
+
+    <label for="lastName">Прізвище (ігрове)</label>
+    <input id="lastName" type="text" autocomplete="off">
+
+    <label for="address">Адреса (ігрова)</label>
+    <input id="address" type="text" autocomplete="off">
+
+    <label for="birth">Дата народження (за грою)</label>
+    <input id="birth" type="text" placeholder="наприклад, 14.03.1995" autocomplete="off">
+
+    <button onclick="saveDoc()">Оформити документ</button>
+  </section>
+
+  <!-- Тут з'явиться готовий документ -->
+  <section class="card doc" id="doc">
+    <h2>Ваш документ на житло</h2>
+    <dl>
+      <dt>Ім'я</dt><dd id="outFirst"></dd>
+      <dt>Прізвище</dt><dd id="outLast"></dd>
+      <dt>Адреса</dt><dd id="outAddress"></dd>
+      <dt>Дата народження</dt><dd id="outBirth"></dd>
+    </dl>
+  </section>
+
+  <!-- ===== ЗАБОРГОВАНІСТЬ ===== -->
+  <section class="card debt">
+    <div class="label">Ваша заборгованість</div>
+    <div class="sum" id="debt">0</div>
+  </section>
+</main>
+
+<script>
+  /* ===== НАЛАШТУВАННЯ — міняй тут ===== */
+  const debt = 0;   // сума заборгованості
+  const welcomeMessage = "Вітаю, {NAME}! Це ваша цифрова податкова.";
+
+  // Якщо Telegram недоступний (перегляд у браузері), працюємо без нього
+  const tg = (window.Telegram && window.Telegram.WebApp) || {
+    ready() {}, expand() {}, initDataUnsafe: {},
+    showAlert(m) { alert(m); }
+  };
+  tg.ready();
+  tg.expand();
+
+  // Ім'я з Telegram
+  const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  const name = user ? user.first_name : "громадянине";
+  document.getElementById("welcomeText").textContent =
+    welcomeMessage.replace("{NAME}", name);
+
+  document.getElementById("debt").textContent = debt;
+
+  function closeWelcome() {
+    document.getElementById("welcome").classList.add("hidden");
+  }
+
+  // Збереження документа (у пам'яті цього пристрою)
+  function showDoc(d) {
+    document.getElementById("outFirst").textContent = d.first;
+    document.getElementById("outLast").textContent = d.last;
+    document.getElementById("outAddress").textContent = d.address;
+    document.getElementById("outBirth").textContent = d.birth;
+    document.getElementById("doc").classList.add("show");
+  }
+
+  function saveDoc() {
+    const d = {
+      first: document.getElementById("firstName").value.trim(),
+      last: document.getElementById("lastName").value.trim(),
+      address: document.getElementById("address").value.trim(),
+      birth: document.getElementById("birth").value.trim()
+    };
+    if (!d.first || !d.last || !d.address || !d.birth) {
+      tg.showAlert("Заповніть усі поля");
+      return;
+    }
+    try { localStorage.setItem("housingDoc", JSON.stringify(d)); } catch (e) {}
+    showDoc(d);
+    document.getElementById("doc").scrollIntoView();
+  }
+
+  // Якщо документ уже оформлено — показуємо його
+  try {
+    const saved = localStorage.getItem("housingDoc");
+    if (saved) showDoc(JSON.parse(saved));
+  } catch (e) {}
+
+  /* ===== СНІЖИНКИ — міняй тут ===== */
+  const snowCount = 35;   // скільки сніжинок (більше = густіший сніг)
+
+  (function makeSnow() {
+    const box = document.getElementById("snow");
+    for (let i = 0; i < snowCount; i++) {
+      const f = document.createElement("span");
+      f.className = "flake";
+      f.textContent = "❄";
+      f.style.left = Math.random() * 100 + "%";
+      f.style.fontSize = (10 + Math.random() * 16) + "px";
+      f.style.opacity = 0.5 + Math.random() * 0.5;
+      f.style.animationDuration = (7 + Math.random() * 8) + "s";
+      f.style.animationDelay = (-Math.random() * 15) + "s";
+      f.style.setProperty("--drift", (Math.random() * 80 - 40) + "px");
+      box.appendChild(f);
+    }
+  })();
+</script>
+</body>
+</html>
